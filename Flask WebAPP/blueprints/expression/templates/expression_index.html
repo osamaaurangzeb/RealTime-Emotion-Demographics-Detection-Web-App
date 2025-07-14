@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expression & Age</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('expression.static', filename='style.css') }}">
+    <style>
+        /* Additional styles for image upload functionality */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .mode-btn.active {
+            background: rgba(95,190,194,0.3);
+            border-color: #5FBEC2;
+        }
+
+        .upload-section {
+            display: none;
+        }
+
+        .upload-section.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.5);
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+            text-align: center;
+        }
+
+        .upload-area:hover {
+            border-color: #5FBEC2;
+            background: rgba(95,190,194,0.1);
+        }
+
+        .upload-area.dragover {
+            border-color: #5FBEC2;
+            background: rgba(95,190,194,0.2);
+        }
+
+        .upload-text {
+            color: white;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #5FBEC2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .upload-btn:hover {
+            background: #4a9a9e;
+        }
+
+        .results-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .uploaded-image {
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            border: 1px solid white;
+            margin-bottom: 15px;
+        }
+
+        .face-result {
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .face-result h6 {
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .face-result p {
+            color: #21ad41;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .loading {
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error {
+            color: #ff6b6b;
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,107,107,0.1);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .webcam-section.active {
+            display: block;
+        }
+
+        .webcam-section {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .mode-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mode-btn {
+                width: 200px;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+
+    <script src="{{ url_for('expression.static', filename='particles.js') }}"></script>
+    <script src="{{ url_for('expression.static', filename='app.js') }}"></script>
+</head>
+<body>
+    <div id="particles-js"></div>
+
+    <header>
+        <a href="/home" class="logo">
+            <img src="{{ url_for('expression.static', filename='logo.png') }}" alt="Logo">
+        </a>
+
+        <ul class="navlist">
+            <li><a href="/home">HOME</a></li>
+            <li><a href="/expression-age">EXPRESSION & AGE-GENDER</a></li>
+            <li><a href="/speech">SPEECH</a></li>
+        </ul>
+
+        <div class="right-content">
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="body-container">
+            <h4 class="text-center mt-3">Real-Time Emotion & Age Prediction from Expressions</h4>
+
+            <!-- Mode Selection -->
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="webcam">Live Webcam</button>
+                <button class="mode-btn" data-mode="upload">Upload Image</button>
+            </div>
+
+            <!-- Webcam Section -->
+            <div class="webcam-section active">
+                <!-- Webcam Display -->
+                <div class="video-container text-center mt-3">
+                    <img id="video">
+                </div>            
+
+                <!-- Control Buttons -->
+                <div class="text-center mt-3">
+                    <button id="startButton" class="btn btn-success">Start Webcam</button>
+                    <button id="stopButton" class="btn btn-danger" disabled>Stop Webcam</button>
+                </div>
+
+                <!-- Emotion and Age Prediction Result -->
+                <div class="text-center mt-3 mb-4">
+                    <h5>Predicted Emotion: <span id="emotionResult">N/A</span></h5>
+                    <h5>Predicted Age & Gender: <span id="ageResult">N/A</span></h5>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-text">
+                        <strong>Drop an image here or click to upload</strong>
+                    </div>
+                    <div class="upload-subtext">
+                        Supported formats: JPG, PNG, GIF, BMP
+                    </div>
+                    <input type="file" class="file-input" id="fileInput" accept="image/*">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        Choose File
+                    </button>
+                </div>
+
+                <!-- Results Container -->
+                <div class="results-container" id="resultsContainer">
+                    <div class="loading" id="loadingMsg">Processing image...</div>
+                    <div class="text-center">
+                        <img id="uploadedImage" class="uploaded-image" style="display: none;">
+                    </div>
+                    <div id="faceResults"></div>
+                </div>
+
+                <!-- Error Container -->
+                <div class="error" id="errorMsg" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="div-footer">
+        <p class="footer-text">© 2024 Real-Time Multi-Model Emotion and Age Predictor</p>
+    </div>
+
+    <script src="{{ url_for('expression.static', filename='script.js') }}"></script>
+
+</body>
+</html>
